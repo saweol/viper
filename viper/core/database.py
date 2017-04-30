@@ -211,6 +211,7 @@ class Database:
         else:
             db_path = os.path.join(__project__.get_path(), 'viper.db')
             self.engine = create_engine('sqlite:///{0}'.format(db_path), poolclass=NullPool)
+            self.engine.connect().connection.connection.text_factory = str 
 
     def add_tags(self, sha256, tags):
         session = self.Session()
@@ -222,13 +223,19 @@ class Database:
         # The tags argument might be a list, a single tag, or a
         # comma-separated list of tags.
         if isinstance(tags, str):
-            tags = tags.strip()
-            if ',' in tags:
-                tags = tags.split(',')
+            uTags = unicode(tags, "utf-8")
+            uTags = uTags.strip()
+            if ',' in uTags:
+                uTags = uTags.split(',')
             else:
-                tags = tags.split()
+                uTags = uTags.split()
+            # tags = tags.strip()
+            # if ',' in tags:
+            #     tags = tags.split(',')
+            # else:
+            #     tags = tags.split()
 
-        for tag in tags:
+        for tag in uTags:
             tag = tag.strip().lower()
             if tag == '':
                 continue
@@ -243,6 +250,22 @@ class Database:
                     session.commit()
                 except SQLAlchemyError:
                     session.rollback()
+
+        # for tag in tags:
+        #     tag = tag.strip().lower()
+        #     if tag == '':
+        #         continue
+
+        #     try:
+        #         malware_entry.tag.append(Tag(tag))
+        #         session.commit()
+        #     except IntegrityError:
+        #         session.rollback()
+        #         try:
+        #             malware_entry.tag.append(session.query(Tag).filter(Tag.tag==tag).first())
+        #             session.commit()
+        #         except SQLAlchemyError:
+        #             session.rollback()
 
     def list_tags(self):
         session = self.Session()
@@ -288,12 +311,15 @@ class Database:
     def add_note(self, sha256, title, body):
         session = self.Session()
 
+        uTitle = unicode(title, "utf-8")
+        uBody = unicode(body, "utf-8")
+
         malware_entry = session.query(Malware).filter(Malware.sha256 == sha256).first()
         if not malware_entry:
             return
 
         try:
-            malware_entry.note.append(Note(title, body))
+            malware_entry.note.append(Note(uTitle, uBody))
             session.commit()
         except SQLAlchemyError as e:
             print_error("Unable to add note: {0}".format(e))
@@ -463,7 +489,8 @@ class Database:
 
             rows = session.query(Malware).filter(Malware.name.like(value)).all()
         elif key == 'note':
-            value = '%{0}%'.format(value)
+            value = unicode(value, "utf-8")
+            value = u'%{0}%'.format(value)
             rows = session.query(Malware).filter(Malware.note.any(Note.body.like(value))).all()
         elif key == 'type':
             rows = session.query(Malware).filter(Malware.type.like('%{0}%'.format(value))).all()
@@ -475,6 +502,7 @@ class Database:
         return rows
 
     def tag_filter(self, value):
+        value = unicode(value, "utf-8")
         if not value:
             return None
         if "|" in value and "&" in value:
