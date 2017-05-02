@@ -349,7 +349,7 @@ def add_file():
     # Write temp file to disk
     with upload_temp() as temp_dir:
         for upload in uploads:
-            file_path = os.path.join(temp_dir, upload.filename)
+            file_path = os.path.join(temp_dir, upload.raw_filename)
             with open(file_path, 'w') as tmp_file:
                 tmp_file.write(upload.file.read())
             # Zip Files

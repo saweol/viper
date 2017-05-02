@@ -362,6 +362,7 @@ class Database:
 
         if not name:
             name = obj.name
+        uName = unicode(name, "utf-8")
 
         if parent_sha:
             parent_sha = session.query(Malware).filter(Malware.sha256 == parent_sha).first()
@@ -377,7 +378,7 @@ class Database:
                                         type=obj.type,
                                         mime=obj.mime,
                                         ssdeep=obj.ssdeep,
-                                        name=name,
+                                        name=uName,
                                         parent=parent_sha)
                 session.add(malware_entry)
                 session.commit()
