@@ -335,8 +335,11 @@ class Database:
     def edit_note(self, note_id, body):
         session = self.Session()
 
+        uBody = unicode(body, "utf-8")
+
         try:
-            session.query(Note).get(note_id).body = body
+            #session.query(Note).get(note_id).body = body
+            session.query(Note).get(note_id).body = uBody
             session.commit()
         except SQLAlchemyError as e:
             print_error("Unable to update note: {0}".format(e))
@@ -482,6 +485,7 @@ class Database:
             if not value:
                 print_error("You need to specify a valid file name pattern (you can use wildcards)")
                 return None
+            value = unicode(value, "utf-8")
 
             if '*' in value:
                 value = value.replace('*', '%')
@@ -492,7 +496,17 @@ class Database:
         elif key == 'note':
             value = unicode(value, "utf-8")
             value = u'%{0}%'.format(value)
-            rows = session.query(Malware).filter(Malware.note.any(Note.body.like(value))).all()
+            print '[DEBUG_NOTE] value : '
+            print value
+            debug_value = Malware.note.any(Note.title.like(value))
+            rows =       session.query(Malware).filter(Malware.note.any(Note.body.like(value))).all()
+            title_rows =  session.query(Malware).filter(Malware.note.like(Note.title.like(value))).all()
+            print '[DEBUG_NOTE] rows : '
+            print rows
+            print '[DEBUG_NOTE] title_rows : '
+            print title_rows
+            print '[DEBUG_NOTE] debug_value : '
+            print debug_value
         elif key == 'type':
             rows = session.query(Malware).filter(Malware.type.like('%{0}%'.format(value))).all()
         elif key == 'mime':
@@ -503,7 +517,8 @@ class Database:
         return rows
 
     def tag_filter(self, value):
-        value = unicode(value, "utf-8")
+        if type(value) is not unicode:
+            value = unicode(value, "utf-8")
         if not value:
             return None
         if "|" in value and "&" in value:
